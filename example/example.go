@@ -11,21 +11,16 @@ import (
 	"net/http"
 
 	"gitee.com/rocket049/websocketrpc"
-
-	ui "github.com/malivvan/webkitgtk"
 )
-
-// go:./icon.png
-var icon []byte
 
 const Port = 17680
 
-type API struct {
-	app *ui.App
-}
+var exit = make(chan int)
+
+type API struct{}
 
 func (a *API) Quit() error {
-	a.app.Quit()
+	exit <- 1
 	return nil
 }
 
@@ -37,24 +32,10 @@ func main() {
 		log.SetOutput(io.Discard)
 	}
 
-	app := ui.New(ui.AppOptions{
-		Name: "example",
-		Icon: icon,
-	})
-	actions := &API{app: app}
+	actions := &API{}
 	go serve(actions, *static)
 
-	app.Open(ui.WindowOptions{
-		Title: "example",
-		URL:   fmt.Sprintf("http://localhost:%v", Port),
-		Define: map[string]interface{}{
-			"app": actions,
-		},
-	})
-
-	if err := app.Run(); err != nil {
-		panic(err)
-	}
+	_ = <-exit
 }
 
 func serve(actions *API, static string) {

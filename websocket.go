@@ -1,3 +1,12 @@
+// User only need to use 3 functions:
+//
+//	websocketrpc.CreateServer
+//	websocketrpc.MyRpcClient.Call
+//	websocketrpc.MyRpcClient.Notify
+//
+// Do not use other functions.
+//
+// Read "example/example.go" and "example/static/main.js" to learn how to use.
 package websocketrpc
 
 import (
@@ -10,6 +19,13 @@ import (
 	"time"
 )
 
+// User just need to use the function "CreateServer", use it like follow:
+//
+//	svr := http.NewServeMux()
+//	httpserver, rpcClient := websocketrpc.CreateServer(svr, "/_myws/_conn/", static)
+//	// add other web api
+//	// user can use rpcClient.Call and rpcClient.Notify call javascript functions in browser
+//	httpserver.Serve( listener )
 func CreateServer(svr *http.ServeMux, websocketPath, rootStatic string) (*http.Server, *MyRpcClient) {
 	fshandler := http.FileServer(http.Dir(rootStatic))
 	svr.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

@@ -18,10 +18,12 @@ type MyRpcClient struct {
 	Ws            *WsServer
 }
 
-// Typ: call/result/notify
-// Id: unique (call/result)
-// Action: function name (call/notify)
-// Args: arguments or result (call/result/notify)
+// RpcCmd : data struct for transport remote calls.
+//
+//	Typ: call/result/notify
+//	Id: unique (call/result)
+//	Action: function name (call/notify)
+//	Args: arguments or result (call/result/notify)
 type RpcCmd struct {
 	Typ    string      `json:"typ"`
 	Id     uint64      `json:"id"`
@@ -66,6 +68,11 @@ func (p *MyRpcClient) ResultRecv() {
 	}
 }
 
+// Call : remote call function "fn" in web browser. Call will return a channel for result.
+//
+//	r : this is used to find the connection for the correct client.
+//	fn : name of the remote function in web browser.
+//	args : arguments of the function, they will be sent as JSON.
 func (p *MyRpcClient) Call(r *http.Request, fn string, args interface{}) <-chan interface{} {
 	c, err := r.Cookie("websocketid")
 	if err != nil {
@@ -109,6 +116,11 @@ func (p *MyRpcClient) Call(r *http.Request, fn string, args interface{}) <-chan 
 	return res
 }
 
+// Notify : remote call function "fn" in web browser. It will not return any results.
+//
+//	r : this is used to find the connection for the correct client.
+//	fn : name of the remote function in web browser.
+//	args : arguments of the function, they will be sent as JSON.
 func (p *MyRpcClient) Notify(r *http.Request, fn string, args interface{}) {
 	c, err := r.Cookie("websocketid")
 	if err != nil {
