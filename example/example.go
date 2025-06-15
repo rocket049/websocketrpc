@@ -10,7 +10,7 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/rocket049/websocketrpc"
+	"gitee.com/rocket049/websocketrpc"
 )
 
 const Port = 17680
@@ -64,7 +64,8 @@ func serve(actions *API, static string) {
 			ret := <-ch
 			s := fmt.Sprintf("%v + %v = %v\n", x, y, ret)
 			//调用浏览器的 show 方法，显示字符串s，Notify 调用无需返回结果
-			rpcClient.Notify(r, "show", s)
+			conn := rpcClient.GetConnection(r)
+			rpcClient.NotifyConn(conn, "show", s)
 		}()
 		w.WriteHeader(200)
 		w.Write([]byte("ok"))
