@@ -45,6 +45,7 @@ func NewMyRpcClient() *MyRpcClient {
 	return ret
 }
 
+// Do not call ResultRecv, it is always running backend.
 func (p *MyRpcClient) ResultRecv() {
 	for data := range p.ResultChannel {
 		res := RpcCmd{}
@@ -136,6 +137,96 @@ func (p *MyRpcClient) Notify(r *http.Request, fn string, args interface{}) {
 		log.Println("no websocket connection:", c.Value)
 		return
 	}
+
+	cmd := &RpcCmd{
+		Typ:    "notify",
+		Id:     0,
+		Action: fn,
+		Data:   args,
+	}
+
+	callData, err := json.Marshal(cmd)
+	if err != nil {
+		log.Println(err)
+
+		return
+	}
+
+	err = p.Conn.WriteMessage(1, callData)
+	if err != nil {
+		log.Println(err)
+	}
+
+}
+
+// GetConnection will return `*websocket.Conn` pointer, index by `r *http.Request`
+func (p *MyRpcClient) GetConnection(r *http.Request) *websocket.Conn {
+	c, err := r.Cookie("websocketid")
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	p.Ws.Lock()
+	conn, ok := p.Ws.connMap[c.Value]
+	p.Ws.Unlock()
+	if ok {
+		p.Conn = conn
+		return p.Conn
+	} else {
+		log.Println("no websocket connection:", c.Value)
+		return nil
+	}
+}
+
+// CallConn : remote call function "fn" in web browser. Call will return a channel for result.
+//
+//	conn : `*websocket.Conn` pointer.
+//	fn : name of the remote function in web browser.
+//	args : arguments of the function, they will be sent as JSON.
+//
+// This function works same as `Call`, but will be more quickly when run very much times.
+func (p *MyRpcClient) CallConn(conn *websocket.Conn, fn string, args interface{}) <-chan interface{} {
+
+	p.Conn = conn
+
+	id := p.Id.Add(1)
+	cmd := &RpcCmd{
+		Typ:    "call",
+		Id:     id,
+		Action: fn,
+		Data:   args,
+	}
+
+	callData, err := json.Marshal(cmd)
+	if err != nil {
+		log.Println(err)
+
+		return nil
+	}
+
+	res := make(chan interface{}, 1)
+	p.ChannelMap.Store(id, res)
+
+	err = p.Conn.WriteMessage(1, callData)
+	if err != nil {
+		log.Println(err)
+		close(res)
+		p.ChannelMap.Delete(id)
+		return nil
+	}
+	return res
+}
+
+// NotifyConn : remote call function "fn" in web browser. It will not return any results.
+//
+//	conn : `*websocket.Conn` pointer.
+//	fn : name of the remote function in web browser.
+//	args : arguments of the function, they will be sent as JSON.
+//
+// This function works same as `Notify`, but will be more quickly when run very much times.
+func (p *MyRpcClient) NotifyConn(conn *websocket.Conn, fn string, args interface{}) {
+
+	p.Conn = conn
 
 	cmd := &RpcCmd{
 		Typ:    "notify",
