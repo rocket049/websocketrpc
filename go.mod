@@ -1,4 +1,4 @@
-module gitee.com/rocket049/websocketrpc
+module github.com/rocket049/websocketrpc
 
 go 1.23.5
 
