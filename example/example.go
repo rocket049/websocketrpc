@@ -10,7 +10,7 @@ import (
 	"net"
 	"net/http"
 
-	"gitee.com/rocket049/websocketrpc"
+	"github.com/rocket049/websocketrpc"
 )
 
 const Port = 17680

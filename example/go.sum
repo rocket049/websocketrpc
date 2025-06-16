@@ -1,6 +1,4 @@
-gitee.com/rocket049/websocketrpc v1.0.0 h1:HhShkTa+bbAilPss2ixce6b0IyGQKvy0LzoKn8N4Qk0=
-gitee.com/rocket049/websocketrpc v1.0.0/go.mod h1:isBhbTNETrYGgZIoiKawCnd8F2g8F63hXsFgN9ZxZHs=
 github.com/gorilla/websocket v1.5.3 h1:saDtZ6Pbx/0u+bgYQ3q96pZgCzfhKXGPqt7kZ72aNNg=
 github.com/gorilla/websocket v1.5.3/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
-github.com/rocket049/websocketrpc v0.0.0-20250615114817-33869664c9c4 h1:b5jkDiL2vDJgXs3BtBwwAhcNnn22it7znaQYuZaJOyQ=
-github.com/rocket049/websocketrpc v0.0.0-20250615114817-33869664c9c4/go.mod h1:SNbMRJOkxG1d8JE//+H5u7n0z82Gndophh2tM9BVbP0=
+github.com/rocket049/websocketrpc v1.0.5 h1:wPEOLr85jFcqCmr6A3hPRj21/PdrYAnM1b3cz4Vauqw=
+github.com/rocket049/websocketrpc v1.0.5/go.mod h1:SNbMRJOkxG1d8JE//+H5u7n0z82Gndophh2tM9BVbP0=
