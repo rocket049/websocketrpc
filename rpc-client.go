@@ -186,7 +186,9 @@ func (p *MyRpcClient) GetConnection(r *http.Request) *websocket.Conn {
 //
 // This function works same as `Call`, but will be more quickly when run very much times.
 func (p *MyRpcClient) CallConn(conn *websocket.Conn, fn string, args interface{}) <-chan interface{} {
-
+	if conn == nil {
+		return nil
+	}
 	p.Conn = conn
 
 	id := p.Id.Add(1)
@@ -225,7 +227,9 @@ func (p *MyRpcClient) CallConn(conn *websocket.Conn, fn string, args interface{}
 //
 // This function works same as `Notify`, but will be more quickly when run very much times.
 func (p *MyRpcClient) NotifyConn(conn *websocket.Conn, fn string, args interface{}) {
-
+	if conn == nil {
+		return
+	}
 	p.Conn = conn
 
 	cmd := &RpcCmd{
