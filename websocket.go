@@ -12,7 +12,8 @@ package websocketrpc
 import (
 	"log"
 	"net/http"
-	"sync"
+
+	"gitee.com/rocket049/syncmap"
 
 	"github.com/gorilla/websocket"
 
@@ -26,21 +27,24 @@ import (
 //	// add other web api
 //	// user can use rpcClient.Call and rpcClient.Notify call javascript functions in browser
 //	httpserver.Serve( listener )
+//
+// If websocketPath=="", it will use default path: "/_myws/_conn/" .
+// static is the dir of static files, the home page is index.html .
 func CreateServer(svr *http.ServeMux, websocketPath, rootStatic string) (*http.Server, *MyRpcClient) {
 	fshandler := http.FileServer(http.Dir(rootStatic))
 	svr.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost*")
 		cookie := http.Cookie{Name: "websocketid", Value: r.RemoteAddr}
 		w.Header().Add("Set-Cookie", cookie.String())
 		fshandler.ServeHTTP(w, r)
 	})
 
 	wsPath := "/_myws/_conn/"
-	if websocketPath == "" {
+	if websocketPath != "" {
 		wsPath = websocketPath
 	}
 	rpcClient := NewMyRpcClient()
-	ws := &WsServer{rpcClient: rpcClient, connMap: make(map[string]*websocket.Conn)}
+	ws := &WsServer{rpcClient: rpcClient, connMap: syncmap.NewSyncMap(make(map[string]*websocket.Conn))}
 	rpcClient.Ws = ws
 	svr.HandleFunc(wsPath, func(w http.ResponseWriter, r *http.Request) {
 		log.Println("my websocket connect", r.Proto)
@@ -64,17 +68,8 @@ var upgrader = websocket.Upgrader{
 }
 
 type WsServer struct {
-	locker    sync.Mutex
-	connMap   map[string]*websocket.Conn
+	connMap   *syncmap.SyncMap[string, *websocket.Conn]
 	rpcClient *MyRpcClient
-}
-
-func (s *WsServer) Lock() {
-	s.locker.Lock()
-}
-
-func (s *WsServer) Unlock() {
-	s.locker.Unlock()
 }
 
 func (s *WsServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -87,13 +82,12 @@ func (s *WsServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	c, err := r.Cookie("websocketid")
 	if err != nil {
-		log.Println(err)
+		log.Println(err, ": Try refresh the page.")
 		return
 	}
 
-	s.locker.Lock()
-	s.connMap[c.Value] = conn
-	s.locker.Unlock()
+	s.connMap.Put(c.Value, conn)
+
 	log.Println("websocket upgraded:", c.Value)
 
 	//msg := make(map[string]string, 2)
@@ -116,9 +110,6 @@ loop1:
 		switch string(message) {
 		case "myws,connected!":
 			clientCorrect = true
-			s.locker.Lock()
-			s.rpcClient.Conn = s.connMap[r.RemoteAddr]
-			s.locker.Unlock()
 			log.Println("connected", conn.RemoteAddr().String())
 		case "ping-pong":
 			err = conn.WriteMessage(mt, message)
@@ -131,7 +122,6 @@ loop1:
 
 		}
 	}
-	s.locker.Lock()
-	delete(s.connMap, c.Value)
-	s.locker.Unlock()
+	s.connMap.Delete(c.Value)
+
 }

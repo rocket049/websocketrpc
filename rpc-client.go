@@ -4,15 +4,15 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"sync"
 	"sync/atomic"
 
+	"gitee.com/rocket049/syncmap"
 	"github.com/gorilla/websocket"
 )
 
 type MyRpcClient struct {
 	Id            *atomic.Uint64
-	ChannelMap    *sync.Map
+	ChannelMap    *syncmap.SyncMap[uint64, chan interface{}]
 	ResultChannel chan []byte
 	Conn          *websocket.Conn
 	Ws            *WsServer
@@ -34,7 +34,7 @@ type RpcCmd struct {
 func NewMyRpcClient() *MyRpcClient {
 	id := &atomic.Uint64{}
 	id.Store(0)
-	m := &sync.Map{}
+	m := syncmap.NewSyncMap(make(map[uint64]chan interface{}))
 	rch := make(chan []byte, 1)
 	ret := &MyRpcClient{
 		Id:            id,
@@ -58,11 +58,11 @@ func (p *MyRpcClient) ResultRecv() {
 		if res.Typ != "result" {
 			continue
 		}
-		ch, ok := p.ChannelMap.Load(res.Id)
+		channel, ok := p.ChannelMap.Get(res.Id)
 		if !ok {
 			continue
 		}
-		channel := ch.(chan interface{})
+
 		channel <- res.Data
 		close(channel)
 		p.ChannelMap.Delete(res.Id)
@@ -80,9 +80,9 @@ func (p *MyRpcClient) Call(r *http.Request, fn string, args interface{}) <-chan 
 		log.Println(err)
 		return nil
 	}
-	p.Ws.Lock()
-	conn, ok := p.Ws.connMap[c.Value]
-	p.Ws.Unlock()
+
+	conn, ok := p.Ws.connMap.Get(c.Value)
+
 	if ok {
 		p.Conn = conn
 	} else {
@@ -105,7 +105,7 @@ func (p *MyRpcClient) Call(r *http.Request, fn string, args interface{}) <-chan 
 	}
 
 	res := make(chan interface{}, 1)
-	p.ChannelMap.Store(id, res)
+	p.ChannelMap.Put(id, res)
 
 	err = p.Conn.WriteMessage(1, callData)
 	if err != nil {
@@ -128,9 +128,9 @@ func (p *MyRpcClient) Notify(r *http.Request, fn string, args interface{}) {
 		log.Println(err)
 		return
 	}
-	p.Ws.Lock()
-	conn, ok := p.Ws.connMap[c.Value]
-	p.Ws.Unlock()
+
+	conn, ok := p.Ws.connMap.Get(c.Value)
+
 	if ok {
 		p.Conn = conn
 	} else {
@@ -166,9 +166,9 @@ func (p *MyRpcClient) GetConnection(r *http.Request) *websocket.Conn {
 		log.Println(err)
 		return nil
 	}
-	p.Ws.Lock()
-	conn, ok := p.Ws.connMap[c.Value]
-	p.Ws.Unlock()
+
+	conn, ok := p.Ws.connMap.Get(c.Value)
+
 	if ok {
 		p.Conn = conn
 		return p.Conn
@@ -207,7 +207,7 @@ func (p *MyRpcClient) CallConn(conn *websocket.Conn, fn string, args interface{}
 	}
 
 	res := make(chan interface{}, 1)
-	p.ChannelMap.Store(id, res)
+	p.ChannelMap.Put(id, res)
 
 	err = p.Conn.WriteMessage(1, callData)
 	if err != nil {
