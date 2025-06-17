@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"time"
 
 	"github.com/rocket049/websocketrpc"
 )
@@ -44,7 +45,7 @@ func serve(actions *API, static string) {
 	if err != nil {
 		panic(err)
 	}
-	println("serve on:", fmt.Sprintf("http://localhost:%v", Port))
+	println("serve on:", fmt.Sprintf("http://localhost:%v/?t=%v", Port, time.Now().Unix()))
 	//初始化http服务器，得到 rpcClient 指针，指针指向 websocketrpc.MyRpcClient 结构体
 	svr := http.NewServeMux()
 	httpserver, rpcClient := websocketrpc.CreateServer(svr, "/_myws/_conn/", static)
