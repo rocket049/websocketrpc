@@ -36,6 +36,7 @@ func CreateServer(svr *http.ServeMux, websocketPath, rootStatic string) (*http.S
 		w.Header().Set("Access-Control-Allow-Origin", "http://localhost*")
 		cookie := http.Cookie{Name: "websocketid", Value: r.RemoteAddr}
 		w.Header().Add("Set-Cookie", cookie.String())
+		w.Header().Add("Cache-Control", "no-cache")
 		fshandler.ServeHTTP(w, r)
 	})
 

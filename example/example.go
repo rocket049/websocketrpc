@@ -48,7 +48,7 @@ func serve(actions *API, static string) {
 	println("serve on:", fmt.Sprintf("http://localhost:%v/?t=%v", Port, time.Now().Unix()))
 	//初始化http服务器，得到 rpcClient 指针，指针指向 websocketrpc.MyRpcClient 结构体
 	svr := http.NewServeMux()
-	httpserver, rpcClient := websocketrpc.CreateServer(svr, "/_myws/_conn/", static)
+	httpserver, rpcClient := websocketrpc.CreateServer(svr, "", static)
 	//下面用 svr.HandleFunc 添加其他 web api
 	//从浏览器调用 /api/calc
 	svr.HandleFunc("/api/calc", func(w http.ResponseWriter, r *http.Request) {
